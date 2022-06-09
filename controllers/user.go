@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -23,14 +24,25 @@ func GetNotificationsHandler(w http.ResponseWriter, r *http.Request) {
 
 func SetNotificationsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	var transaction models.Transaction
-	err := models.Decoder.Decode(&transaction, r.URL.Query())
+	var variables struct {
+		Email					string `json:"email"`
+		Receiver				string `json:"receiver" `
+		ReceiverEmail			string `json:"receiverEmail"`
+		Sender					string `json:"sender"`
+		IsReceiverInDatabase 	bool `json:"isReceiverInDatabase"`
+		DateOfTransaction 		string `json:"dateOfTransaction"`
+		Type 					string `json:"type"`
+		Amount 					float64 `json:"amount"`
+	}
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&variables)
+	fmt.Printf("\n query: %v\n", variables)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var result bool = database.InsertUserAndNotification(transaction)
+	var result bool = database.InsertUserAndNotification(variables)
 	json.NewEncoder(w).Encode(result)
 }
 

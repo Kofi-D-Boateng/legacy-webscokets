@@ -42,11 +42,6 @@ func init(){
 	Db = client.Database(dbName)
 }
 
-func InsertUserAndNotification(transaction models.Transaction) bool {
-	fmt.Printf("Transaction: %v \n", transaction)
-	return true
-}
-
 func FindAUser(email string) models.User{
 	var result models.User
 	users := Db.Collection(UserCollection)
@@ -61,5 +56,82 @@ func FindAUser(email string) models.User{
 func MarkMessageAsRead(request models.MarkMessage) bool {
 	fmt.Printf("\n email: %v", request.Email)
 	fmt.Printf("\n email: %v", request.MsgID)
+	return true
+}
+
+func InsertUserAndNotification(variables struct {Email					string `json:"email"`
+		Receiver				string `json:"receiver" `
+		ReceiverEmail			string `json:"receiverEmail"`
+		Sender					string `json:"sender"`
+		IsReceiverInDatabase 	bool `json:"isReceiverInDatabase"`
+		DateOfTransaction 		string `json:"dateOfTransaction"`
+		Type 					string `json:"type"`
+		Amount 					float64 `json:"amount"`}) bool {
+
+	var transaction models.Transaction
+	var sender models.User
+	var receiver models.User
+	receiverEmailFilter := bson.M{"email": variables.ReceiverEmail}
+	senderEmailFilter := bson.M{"email": variables.Email}
+	users := Db.Collection(UserCollection)
+
+	transaction.Amount = variables.Amount
+	transaction.DateOfTransaction = variables.DateOfTransaction
+	transaction.Receiver = variables.Receiver
+	transaction.ReceiverEmail = variables.ReceiverEmail
+	transaction.Sender = variables.Sender
+	transaction.Type = variables.Type
+
+	fmt.Println(transaction)
+
+	// FIND PERSONNEL
+	errOne := users.FindOne(context.Background(), receiverEmailFilter).Decode(&receiver)
+	errTwo := users.FindOne(context.Background(),senderEmailFilter).Decode(&sender)
+	if errOne != nil {
+		log.Fatal(errOne)
+	}
+	if errTwo != nil {
+		log.Fatal(errTwo)
+	}
+
+	// BUSINESS LOGIC
+
+	// CREATE NOTIFICATION FOR IN-HOUSE CUSTOMERS
+	if variables.IsReceiverInDatabase && receiver.Email != variables.ReceiverEmail {
+		receiver.Email = variables.ReceiverEmail
+		receiver.Notifications = []models.Transaction{}
+		_, err := users.UpdateOne(context.Background(),receiverEmailFilter,receiver)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	if variables.Email != sender.Email {
+		sender.Email = variables.Email
+		sender.Notifications = []models.Transaction{}
+		_, err := users.UpdateOne(context.Background(), senderEmailFilter, sender)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return true
+	}
+
+	// UPDATING IN-HOUSE RECEIVER
+	if variables.IsReceiverInDatabase && receiver.Email == variables.ReceiverEmail {
+		receiver.Notifications = append(receiver.Notifications, transaction)
+		_,err := users.UpdateOne(context.Background(), receiverEmailFilter, receiver)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	sender.Notifications = append(sender.Notifications, transaction)
+	_,err := users.UpdateOne(context.Background(), senderEmailFilter, sender)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return true
 }
