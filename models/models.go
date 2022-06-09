@@ -15,11 +15,11 @@ type User struct {
 }
 
 type Transaction struct {
-	Receiver				string `json:"receiver" bson:"cardNumber"`
-	ReceiverEmail			string `json:"receiverEmail" bson:"cardNumber"`
-	Sender					string `json:"sender" bson:"cvc"`
-	DateOfTransaction 		string `json:"dateOfTransaction" bson:"dateOfTransaction"`
-	Type 					string `json:"type" bson:"type"`
+	ID            			primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Receiver				string 	`json:"receiver" bson:"receiver"`
+	Sender					string 	`json:"sender" bson:"sender"`
+	Date					string 	`json:"date" bson:"date"`
+	Read 					bool 	`json:"read" bson:"read"`
 	Amount 					float64 `json:"amount" bson:"amount"`
 }
 

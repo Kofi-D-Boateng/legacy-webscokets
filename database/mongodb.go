@@ -55,7 +55,35 @@ func FindAUser(email string) models.User{
 
 func MarkMessageAsRead(request models.MarkMessage) bool {
 	fmt.Printf("\n email: %v", request.Email)
-	fmt.Printf("\n email: %v", request.MsgID)
+	fmt.Printf("\n id: %v", request.MsgID)
+
+	var customer models.User
+
+	user := Db.Collection(UserCollection)
+	filter := bson.M{"email": request.Email}
+	err := user.FindOne(context.Background(), filter).Decode(&customer)
+
+	if err != nil {
+		log.Fatal(err)
+		return false
+	}
+
+	for _, noti := range customer.Notifications {
+		if noti.ID.Hex() == request.MsgID {
+			noti.Read = true
+			
+		}else{
+			continue
+		}
+	}
+
+	_, updateErr := user.UpdateOne(context.Background(), filter, customer)
+
+	if updateErr != nil {
+		log.Fatal(updateErr)
+		return false
+	}
+
 	return true
 }
 
@@ -76,11 +104,10 @@ func InsertUserAndNotification(variables struct {Email					string `json:"email"`
 	users := Db.Collection(UserCollection)
 
 	transaction.Amount = variables.Amount
-	transaction.DateOfTransaction = variables.DateOfTransaction
+	transaction.Date = variables.DateOfTransaction
 	transaction.Receiver = variables.Receiver
-	transaction.ReceiverEmail = variables.ReceiverEmail
 	transaction.Sender = variables.Sender
-	transaction.Type = variables.Type
+	transaction.Read = false
 
 	fmt.Println(transaction)
 
@@ -89,9 +116,11 @@ func InsertUserAndNotification(variables struct {Email					string `json:"email"`
 	errTwo := users.FindOne(context.Background(),senderEmailFilter).Decode(&sender)
 	if errOne != nil {
 		log.Fatal(errOne)
+		return false
 	}
 	if errTwo != nil {
 		log.Fatal(errTwo)
+		return false
 	}
 
 	// BUSINESS LOGIC
@@ -103,6 +132,7 @@ func InsertUserAndNotification(variables struct {Email					string `json:"email"`
 		_, err := users.UpdateOne(context.Background(),receiverEmailFilter,receiver)
 		if err != nil {
 			log.Fatal(err)
+			return false
 		}
 	}
 
@@ -112,6 +142,7 @@ func InsertUserAndNotification(variables struct {Email					string `json:"email"`
 		_, err := users.UpdateOne(context.Background(), senderEmailFilter, sender)
 		if err != nil {
 			log.Fatal(err)
+			return false
 		}
 		return true
 	}
@@ -123,6 +154,7 @@ func InsertUserAndNotification(variables struct {Email					string `json:"email"`
 
 		if err != nil {
 			log.Fatal(err)
+			return false
 		}
 	}
 
@@ -131,6 +163,7 @@ func InsertUserAndNotification(variables struct {Email					string `json:"email"`
 
 	if err != nil {
 		log.Fatal(err)
+		return false
 	}
 
 	return true

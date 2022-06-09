@@ -47,9 +47,10 @@ func SetNotificationsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func MarkNotificationsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	var variables models.MarkMessage
-	err := models.Decoder.Decode(&variables, r.URL.Query())
-
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&variables)
 	if err != nil {
 		log.Fatal(err)
 	}
