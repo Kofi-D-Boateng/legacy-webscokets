@@ -1,11 +1,8 @@
 package models
 
 import (
-	"github.com/gorilla/schema"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
-
-var Decoder = schema.NewDecoder()
 
 
 type User struct {
@@ -36,3 +33,11 @@ type CustomerServiceMessage struct {
 	Message				string `json:"msg,omitempty" bson:"msg,omitempty"`
 	SentAt				string `json:"sentAt,omitempty" bson:"sentAt,omitempty"` 
 }
+
+type EmailAttributes struct {
+		Token		string `json:"token"`
+		Person      struct {
+			Name string `json:"name"`
+			Email string `json:"email"`
+		} `json:"person"`
+	}
