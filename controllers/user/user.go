@@ -25,8 +25,6 @@ func GetNotificationsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func SetNotificationsHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	var variables struct {
 		Email					string 	`json:"email"`
 		Receiver				string 	`json:"receiver" `
@@ -46,12 +44,12 @@ func SetNotificationsHandler(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 	}
 
-	var result bool = database.InsertUserAndNotification(variables)
-	json.NewEncoder(w).Encode(result)
+	var result int = database.InsertUserAndNotification(variables)
+	w.WriteHeader(result)
+	json.NewEncoder(w)
 }
 
 func MarkNotificationsHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	var variables models.MarkMessage
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&variables)
@@ -59,6 +57,6 @@ func MarkNotificationsHandler(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 	}
 
-	var result bool = database.MarkMessageAsRead(variables)
+	var result int = database.MarkMessageAsRead(variables)
 	json.NewEncoder(w).Encode(result)
 }

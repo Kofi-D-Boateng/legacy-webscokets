@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/Kofi-D-Boateng/legacynotifications/models"
 	"go.mongodb.org/mongo-driver/bson"
@@ -16,12 +17,12 @@ func FindAUser(email string) models.User {
 	filter := bson.M{"email": email}
 	err := users.FindOne(context.Background(), filter).Decode(&result)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 	}
 	return result
 }
 
-func MarkMessageAsRead(request models.MarkMessage) bool {
+func MarkMessageAsRead(request models.MarkMessage) int {
 	fmt.Printf("\n email: %v", request.Email)
 	fmt.Printf("\n id: %v", request.MsgID)
 
@@ -32,8 +33,8 @@ func MarkMessageAsRead(request models.MarkMessage) bool {
 	err := user.FindOne(context.Background(), filter).Decode(&customer)
 
 	if err != nil {
-		log.Fatal(err)
-		return false
+		log.Print(err)
+		return http.StatusInternalServerError
 	}
 
 	for _, noti := range customer.Notifications {
@@ -48,11 +49,11 @@ func MarkMessageAsRead(request models.MarkMessage) bool {
 	_, updateErr := user.UpdateOne(context.Background(), filter, customer)
 
 	if updateErr != nil {
-		log.Fatal(updateErr)
-		return false
+		log.Print(updateErr)
+		return http.StatusInternalServerError
 	}
 
-	return true
+	return http.StatusOK
 }
 
 func InsertUserAndNotification(variables struct {
@@ -64,7 +65,7 @@ func InsertUserAndNotification(variables struct {
 	DateOfTransaction    string  `json:"dateOfTransaction"`
 	Type                 string  `json:"type"`
 	Amount               float64 `json:"amount"`
-}) bool {
+}) int {
 
 	var transaction models.Transaction
 	var sender models.User
@@ -85,12 +86,12 @@ func InsertUserAndNotification(variables struct {
 	errOne := users.FindOne(context.Background(), receiverEmailFilter).Decode(&receiver)
 	errTwo := users.FindOne(context.Background(), senderEmailFilter).Decode(&sender)
 	if errOne != nil {
-		log.Fatal(errOne)
-		return false
+		log.Print(errOne)
+		return http.StatusInternalServerError
 	}
 	if errTwo != nil {
-		log.Fatal(errTwo)
-		return false
+		log.Print(errTwo)
+		return http.StatusInternalServerError
 	}
 
 	// BUSINESS LOGIC
@@ -101,8 +102,8 @@ func InsertUserAndNotification(variables struct {
 		receiver.Notifications = []models.Transaction{}
 		_, err := users.UpdateOne(context.Background(), receiverEmailFilter, receiver)
 		if err != nil {
-			log.Fatal(err)
-			return false
+			log.Print(err)
+			return http.StatusInternalServerError
 		}
 	}
 
@@ -111,10 +112,10 @@ func InsertUserAndNotification(variables struct {
 		sender.Notifications = []models.Transaction{}
 		_, err := users.UpdateOne(context.Background(), senderEmailFilter, sender)
 		if err != nil {
-			log.Fatal(err)
-			return false
+			log.Print(err)
+			return http.StatusInternalServerError
 		}
-		return true
+		return http.StatusOK
 	}
 
 	// UPDATING IN-HOUSE RECEIVER
@@ -123,8 +124,8 @@ func InsertUserAndNotification(variables struct {
 		_, err := users.UpdateOne(context.Background(), receiverEmailFilter, receiver)
 
 		if err != nil {
-			log.Fatal(err)
-			return false
+			log.Print(err)
+			return http.StatusInternalServerError
 		}
 	}
 
@@ -132,9 +133,9 @@ func InsertUserAndNotification(variables struct {
 	_, err := users.UpdateOne(context.Background(), senderEmailFilter, sender)
 
 	if err != nil {
-		log.Fatal(err)
-		return false
+		log.Print(err)
+		return http.StatusInternalServerError
 	}
 
-	return true
+	return http.StatusOK
 }

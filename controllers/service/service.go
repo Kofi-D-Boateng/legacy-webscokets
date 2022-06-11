@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"regexp"
@@ -50,17 +49,18 @@ func CustomerServiceHandler(w http.ResponseWriter, r *http.Request){
 	}
 
 	if Accounts.Match([]byte(customerService.Topic)){
-		var result int16 = database.SendToAccountDept(customerService)
-		json.NewEncoder(w).Encode(result)
+		var result int = database.SendToAccountDept(customerService)
+		w.WriteHeader(result)
+		json.NewEncoder(w)
 	}
 
 	if Billing.Match([]byte(customerService.Topic)){
-		var result int16 = database.SendToBillingDept(customerService)
-		json.NewEncoder(w).Encode(result)
+		var result int = database.SendToBillingDept(customerService)
+		w.WriteHeader(result)
+		json.NewEncoder(w)
 	}
 
-	var result int16 = database.SendToOther(customerService)
-	json.NewEncoder(w).Encode(result)
-
-	fmt.Printf("\n json: %v", customerService)
+	var result int = database.SendToOther(customerService)
+	w.WriteHeader(result)
+	json.NewEncoder(w)
 }

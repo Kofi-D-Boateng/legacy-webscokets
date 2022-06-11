@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"net/smtp"
 	"os"
 
@@ -37,7 +38,7 @@ func init() {
 	link = accountAuthLink
 }
 
-func SendConfirmationEmail(attributes models.EmailAttributes) int16 {
+func SendConfirmationEmail(attributes models.EmailAttributes) int {
 
 	to := []string{attributes.Person.Email}
 	auth := smtp.PlainAuth("", companyEmail, companyPassword, host)
@@ -53,10 +54,26 @@ func SendConfirmationEmail(attributes models.EmailAttributes) int16 {
 	err := smtp.SendMail(host+":"+port, auth,companyEmail,to, []byte(msg))
 
 	if err != nil {
-		log.Fatal(err)
-		return 500
+		fmt.Println(err)
+		return http.StatusInternalServerError
 	}
 
-	return 200
+	return http.StatusOK
 
+}
+
+func SendMailingListConfirmation (email string) int {
+	to := []string{email}
+	auth := smtp.PlainAuth("", companyEmail, companyPassword, host)
+
+	var msg string = "Thank you for joining submitting your email to the maillist! This is a fake end point for demonstration therefore your email will not be stored."
+
+	err := smtp.SendMail(host+":"+port, auth,companyEmail,to, []byte(msg))
+
+	if err != nil {
+		log.Fatal(err)
+		return http.StatusInternalServerError
+	}
+
+	return http.StatusOK
 }

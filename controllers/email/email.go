@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
 	"net/http"
 
 	"github.com/Kofi-D-Boateng/legacynotifications/models"
@@ -10,8 +10,6 @@ import (
 )
 
 func EmailHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	var variables models.EmailAttributes
 
 	decoder := json.NewDecoder(r.Body)
@@ -19,10 +17,11 @@ func EmailHandler(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&variables)
 
 	if err != nil {
-		log.Fatal(err)
+		fmt.Print(err)
 	}
 
 
-	var result int16 = utils.SendConfirmationEmail(variables)
-	json.NewEncoder(w).Encode(result)
+	var result int = utils.SendConfirmationEmail(variables)
+	w.WriteHeader(result)
+	json.NewEncoder(w)
 }
