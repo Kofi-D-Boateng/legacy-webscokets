@@ -1,47 +1,87 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"net/smtp"
 	"os"
+	"path/filepath"
+	"runtime"
 
 	"github.com/Kofi-D-Boateng/legacynotifications/models"
 	"github.com/joho/godotenv"
 )
 
 
-var host string
-var port string
-var companyEmail string
-var companyPassword string
-var link string
+var (
+	companyEmail string
+	link string
+	password string
+	smptHost string
+	smtpPort string
+)
+
 
 func init() {
+	_,file,_, ok := runtime.Caller(0)
+	basePath := filepath.Dir(file)
+	fmt.Println(file)
+	fmt.Println(basePath)
 
-	err := godotenv.Load(".env")
+	if !ok {
+		log.Fatalf("Unable to find file path: %v", file)
+	}
+
+	err := godotenv.Load(filepath.Join(basePath, "../.env"))
 	if err != nil {
 		log.Fatalf("Error: %s", err)
 	}
 
 	var from string = os.Getenv("COMPANY_EMAIL")
-	var password string = os.Getenv("COMPANY_PASSWORD")
-	var smtpHost string = os.Getenv("SMTP_HOST")
-	var smtpPort string = os.Getenv("SMTP_HOST")
+	var pw string = os.Getenv("COMPANY_PASSWORD")
+	var host string = os.Getenv("SMTP_HOST")
+	var port string = os.Getenv("SMTP_PORT")
 	var accountAuthLink string = os.Getenv("ACCT_AUTH_LINK")
 
-	companyPassword = password
+	password = pw
 	companyEmail = from
-	host = smtpHost
-	port = smtpPort
 	link = accountAuthLink
+	smptHost = host
+	smtpPort = port
+
+}
+
+type loginAuthStruct struct {
+  username, password string
+}
+
+func loginAuth(username, password string) smtp.Auth {
+	return &loginAuthStruct{username, password}
+}
+
+func (a *loginAuthStruct) Start(server *smtp.ServerInfo) (string, []byte, error) {
+	return "LOGIN", []byte(a.username), nil
+}
+
+func (a *loginAuthStruct) Next(fromServer []byte, more bool) ([]byte, error) {
+	if more {
+		switch string(fromServer) {
+		case "Username:":
+			return []byte(a.username), nil
+		case "Password:":
+			return []byte(a.password), nil
+		default:
+			return nil, errors.New("unkown fromserver")
+		}
+	}
+	return nil, nil
 }
 
 func SendConfirmationEmail(attributes models.EmailAttributes) int {
 
-	to := []string{attributes.Person.Email}
-	auth := smtp.PlainAuth("", companyEmail, companyPassword, host)
+	auth := loginAuth(companyEmail, password)
 
 	var msg string 
 	if attributes.Person.Name != "" {
@@ -50,12 +90,18 @@ func SendConfirmationEmail(attributes models.EmailAttributes) int {
 		msg = fmt.Sprintf("You have requested a new link to verify your account. Please click on the link below to verify your account. %s?token=%s",link,attributes.Token)
 	}
 
+	from := fmt.Sprintf("From: <%s>\r\n", companyEmail)
+	to := fmt.Sprintf("To: <%s>\r\n", attributes.Person.Name)
+	subject := "Thank you for joining the mailing list\r\n"
+	body := msg +"\r\n"
 
-	err := smtp.SendMail(host+":"+port, auth,companyEmail,to, []byte(msg))
+	message := from+to+subject+"\r\n"+body
+
+	err := smtp.SendMail(smptHost+":"+smtpPort ,auth,companyEmail,[]string{attributes.Person.Email},[]byte(message))
 
 	if err != nil {
-		fmt.Println(err)
-		return http.StatusInternalServerError
+		fmt.Printf("Cannot send email. Error: %v", err)
+		return http.StatusAccepted
 	}
 
 	return http.StatusOK
@@ -63,12 +109,16 @@ func SendConfirmationEmail(attributes models.EmailAttributes) int {
 }
 
 func SendMailingListConfirmation (email string) int {
-	to := []string{email}
-	auth := smtp.PlainAuth("", companyEmail, companyPassword, host)
+	auth := loginAuth(companyEmail, password)
 
-	var msg string = "Thank you for joining submitting your email to the maillist! This is a fake end point for demonstration therefore your email will not be stored."
+	from := fmt.Sprintf("From: <%s>\r\n", companyEmail)
+	to := fmt.Sprintf("To: <%s>\r\n", email)
+	subject := "Thank you for joining the mailing list\r\n"
+	body := "Thank you for joining submitting your email to the maillist! This is a fake end point for demonstration therefore your email will not be stored.\r\n-Kofi Boateng\r\n"
 
-	err := smtp.SendMail(host+":"+port, auth,companyEmail,to, []byte(msg))
+	msg := from+to+subject+"\r\n"+body
+		
+	err := smtp.SendMail(smptHost+":"+smtpPort ,auth,companyEmail,[]string{email},[]byte(msg))
 
 	if err != nil {
 		log.Fatal(err)

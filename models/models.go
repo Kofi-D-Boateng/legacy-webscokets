@@ -15,11 +15,10 @@ type Transaction struct {
 	ID            			primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	Receiver				string 	`json:"receiver" bson:"receiver"`
 	Sender					string 	`json:"sender" bson:"sender"`
-	Date					string 	`json:"date" bson:"date"`
+	Date					string	`json:"date" bson:"date"`
 	Read 					bool 	`json:"read" bson:"read"`
 	Amount 					float64 `json:"amount" bson:"amount"`
 }
-
 
 type MarkMessage struct {
 	Email 		string `json:"email"`
@@ -29,7 +28,7 @@ type MarkMessage struct {
 type CustomerServiceMessage struct {
 	ID            		primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
 	Emailer 			string `json:"emailer,omitempty" bson:"emailer,omitempty"`
-	Topic				string `json:"topic,omitempty" bson:"_id,omitempty"`
+	Topic				string `json:"topic,omitempty" bson:"topic,omitempty"`
 	Message				string `json:"msg,omitempty" bson:"msg,omitempty"`
 	SentAt				string `json:"sentAt,omitempty" bson:"sentAt,omitempty"` 
 }

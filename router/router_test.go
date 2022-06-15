@@ -45,16 +45,3 @@ func TestRequest(t *testing.T){
 		})
 	}
 }
-
-func TestMain(t *testing.T){
-	t.Setenv("API_VERSION", "api/v1")
-	t.Setenv("PORT", ":5500")
-
-
-	c := http.Client{}
-
-	r,_ := c.Get("http://localhost:5500/api/v1/user?email=kdboat2@gmail.com")
-	if r != nil {
-		t.Logf("PASSED! Got: %v",r)
-	}
-}

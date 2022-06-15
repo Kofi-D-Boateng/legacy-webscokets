@@ -9,16 +9,18 @@ import (
 )
 
 func MailingListHandler(w http.ResponseWriter, r *http.Request) {
-	var email string;
+	var data struct {
+		Email string `json:"email"`
+	}
 	decoder := json.NewDecoder(r.Body)
 
-	err := decoder.Decode(&email)
+	err := decoder.Decode(&data)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var result int =  utils.SendMailingListConfirmation(email)
+	var result int =  utils.SendMailingListConfirmation(data.Email)
 	w.WriteHeader(result)
 	json.NewEncoder(w)
 }

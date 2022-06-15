@@ -5,20 +5,33 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+	"runtime"
 
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var Db *mongo.Database
-var UserCollection string;
-var CustomerServiceCollection string;
+var (
+	Db *mongo.Database
+	UserCollection string
+	CustomerServiceCollection string
+)
 
 
 
 func init(){
-	err := godotenv.Load(".env")
+	_,file,_, ok := runtime.Caller(0)
+	basePath := filepath.Dir(file)
+	fmt.Println(file)
+	fmt.Println(basePath)
+
+	if !ok {
+		log.Fatalf("Unable to find file path: %v", file)
+	}
+
+	err := godotenv.Load(filepath.Join(basePath, "../.env"))
 	if err != nil {
 		log.Fatalf("Error: %s", err)
 	}

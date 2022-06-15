@@ -10,9 +10,12 @@ import (
 	"github.com/Kofi-D-Boateng/legacynotifications/models"
 ) 
 
-var EmailExpr *regexp.Regexp
-var Accounts *regexp.Regexp
-var Billing *regexp.Regexp
+var (
+	EmailExpr *regexp.Regexp
+	Accounts *regexp.Regexp
+	Billing *regexp.Regexp
+)
+
 
 func init(){
 	email, checkOne := regexp.Compile(`.+@.+\..+`)

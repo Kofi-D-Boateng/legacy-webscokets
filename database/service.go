@@ -2,11 +2,14 @@ package database
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/Kofi-D-Boateng/legacynotifications/models"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 
@@ -16,59 +19,68 @@ func SendToOther(details models.CustomerServiceMessage) int {
 		Department string `json:"department" bson:"department"`
 		Queue		[]models.CustomerServiceMessage `json:"queue" bson:"queue"`
 	}
+
+	details.ID = primitive.NewObjectID()
 	deptName := "Other"
 	filter := bson.M{"department": deptName}
-
-	cs := Db.Collection(CustomerServiceCollection)
-
-	err := cs.FindOne(context.Background(), filter).Decode(&dept)
+	update := bson.M{"$push": bson.M{"queue":details}}
 	
-	if err != nil {
-		log.Printf("Error grabbing collection: %s \n %v \n", CustomerServiceCollection, err)
-		return http.StatusInternalServerError
-	}
+	cs := Db.Collection(CustomerServiceCollection)
+	result := cs.FindOneAndUpdate(context.Background(), filter, update)
 
-	if dept.Department == deptName {
+	if result.Err() == mongo.ErrNoDocuments {
+		// DOCUMENT NOT FOUND
+		log.Printf("Error grabbing dept: %s, Creating department now.... \n", dept.Department)
+		dept.Department = deptName
 		dept.Queue = append(dept.Queue, details)
+		fmt.Print(dept)
+		_, err := cs.InsertOne(context.Background(),dept)
+		
+		if err != nil {
+			log.Printf("Error saving to dept: %s\n %v \n", deptName, err)
+			return http.StatusInternalServerError
+		}
+		
+		return http.StatusOK
 	}
-	_, updateErr := cs.UpdateOne(context.Background(), filter, dept)
-
-	if updateErr != nil {
-		log.Printf("Error saving to dept: %s\n %v \n", deptName, updateErr)
-		return http.StatusInternalServerError
-	}
-
+	
 	return http.StatusOK
 
 }
 
 func SendToAccountDept(details models.CustomerServiceMessage) int {
+
+
 	var dept struct {
 		Department string `json:"department" bson:"department"`
 		Queue		[]models.CustomerServiceMessage `json:"queue" bson:"queue"`
 	}
-	deptName := "Billing"
+
+	details.ID = primitive.NewObjectID()
+	deptName := "Accounts"
 	filter := bson.M{"department": deptName}
-
-	cs := Db.Collection(CustomerServiceCollection)
-
-	err := cs.FindOne(context.Background(), filter).Decode(&dept)
+	update := bson.M{"$push": bson.M{"queue":details}}
 	
-	if err != nil {
-		log.Printf("Error grabbing collection: %s \n %v", CustomerServiceCollection, err)
-		return http.StatusInternalServerError
-	}
+	cs := Db.Collection(CustomerServiceCollection)
+	result := cs.FindOneAndUpdate(context.Background(), filter, update)
 
-	if dept.Department == deptName {
+	
+	if result.Err() == mongo.ErrNoDocuments {
+		// DOCUMENT NOT FOUND
+		log.Printf("Error grabbing dept: %s, Creating department now.... \n", dept.Department)
+		dept.Department = deptName
 		dept.Queue = append(dept.Queue, details)
+		fmt.Print(dept)
+		_, err := cs.InsertOne(context.Background(),dept)
+		
+		if err != nil {
+			log.Printf("Error saving to dept: %s\n %v \n", deptName, err)
+			return http.StatusInternalServerError
+		}
+		
+		return http.StatusOK
 	}
-	_, updateErr := cs.UpdateOne(context.Background(), filter, dept)
-
-	if updateErr != nil {
-		log.Printf("Error saving to dept: %s\n %v", deptName, updateErr)
-		return http.StatusInternalServerError
-	}
-
+	
 	return http.StatusOK
 }
 
@@ -78,27 +90,29 @@ func SendToBillingDept(details models.CustomerServiceMessage) int{
 		Department string `json:"department" bson:"department"`
 		Queue		[]models.CustomerServiceMessage `json:"queue" bson:"queue"`
 	}
-	deptName := "Other"
+	deptName := "Billing"
 	filter := bson.M{"department": deptName}
-
+	update := bson.M{"$push": bson.M{"queue":details}}
+	
 	cs := Db.Collection(CustomerServiceCollection)
+	result := cs.FindOneAndUpdate(context.Background(), filter, update)
 
-	err := cs.FindOne(context.Background(), filter).Decode(&dept)
 	
-	if err != nil {
-		log.Printf("Error grabbing collection: %s \n %v", CustomerServiceCollection, err)
-		return http.StatusInternalServerError
-	}
-	
-	if dept.Department == deptName {
+	if result.Err() == mongo.ErrNoDocuments {
+		// DOCUMENT NOT FOUND
+		log.Printf("Error grabbing dept: %s, Creating department now.... \n", dept.Department)
+		dept.Department = deptName
 		dept.Queue = append(dept.Queue, details)
+		fmt.Print(dept)
+		_, err := cs.InsertOne(context.Background(),dept)
+		
+		if err != nil {
+			log.Printf("Error saving to dept: %s\n %v \n", deptName, err)
+			return http.StatusInternalServerError
+		}
+		
+		return http.StatusOK
 	}
-	_, updateErr := cs.UpdateOne(context.Background(), filter, dept)
-
-	if updateErr != nil {
-		log.Printf("Error saving to dept: %s\n %v \n", deptName, updateErr)
-		return http.StatusInternalServerError
-	}
-
+	
 	return http.StatusOK
 }

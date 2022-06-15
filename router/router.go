@@ -18,7 +18,6 @@ func Router() *mux.Router {
 	router.HandleFunc("/api/v1/user/mark-notification", user.MarkNotificationsHandler).Methods("PUT")
 	// VERIFICATION
 	router.HandleFunc("/api/v1/verification/send-email", email.EmailHandler).Methods("POST")
-	router.HandleFunc("/api/v1/verification/new-verification-link", email.EmailHandler).Methods("POST")
 	// CUSTOMER SERVICE
 	router.HandleFunc("/api/v1/customer-service/email-customer-service", service.CustomerServiceHandler).Methods("PUT")
 	// MAIL LIST SERVICE
