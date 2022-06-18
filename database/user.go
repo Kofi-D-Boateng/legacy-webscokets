@@ -62,6 +62,13 @@ func InsertUserAndNotification(variables struct {
 	Amount               float64 `json:"amount"`
 }) int {
 
+	var status struct {
+		isReceiverUpdated 	bool
+		isSenderUpdated 	bool
+	}
+
+	fmt.Printf("RECEIVER STATUS: %v \n SENDER STATUS: %v \n", status.isReceiverUpdated,status.isSenderUpdated)
+
 	var transaction models.Transaction
 	var sender models.User
 	var receiver models.User
@@ -78,55 +85,35 @@ func InsertUserAndNotification(variables struct {
 
 	fmt.Println(transaction)
 
+	// BUSINESS LOGIC
+
 	// FIND PERSONNEL
 	errOne := users.FindOne(context.Background(), receiverEmailFilter).Decode(&receiver)
 	errTwo := users.FindOne(context.Background(), senderEmailFilter).Decode(&sender)
 
 	// USER HAS NOT CREATE INSTANCES FOR PURCHASES YET.
 	if errOne != nil {
-		log.Printf("COULD NOT FIND: %v in database, Attempting to create notifications \n",receiver.Email)
+		log.Printf("COULD NOT FIND RECIPIENT: %v in database, Attempting to create notifications if user is in main db.... \n",variables.Receiver)
 		receiver.ID = primitive.NewObjectID()
+		if variables.IsReceiverInDatabase {
+			receiver.Email = variables.ReceiverEmail
+			receiver.Notifications = []models.Transaction{transaction}
+
+			_, errForReceiver := users.InsertOne(context.Background(), receiver)
+
+			if errForReceiver  != nil {
+				log.Printf("ERROR INSERTING DOCUMENTS FOR %v \n", receiver.Email)
+				return http.StatusInternalServerError
+			}
+		}
+		status.isReceiverUpdated = true
 	}
 
 
 	// USER HAS NOT CREATE INSTANCES FOR PURCHASES YET.
 	if errTwo != nil {
-		log.Printf("COULD NOT FIND: %v in database, Attempting to create notifications \n",sender.Email)
+		log.Printf("COULD NOT FIND TRASFERER: %v in database, Attempting to create notifications \n",variables.Sender)
 		sender.ID = primitive.NewObjectID()
-	}
-
-	// BUSINESS LOGIC
-
-	// CREATE NOTIFICATION FOR IN-HOUSE CUSTOMERS
-	if variables.IsReceiverInDatabase && receiver.Email != variables.ReceiverEmail {
-
-		receiver.Email = variables.ReceiverEmail
-		receiver.Notifications = []models.Transaction{transaction}
-
-		_, errForReceiver := users.InsertOne(context.Background(), receiver)
-
-		if errForReceiver  != nil {
-			log.Printf("ERROR INSERTING DOCUMENTS FOR %v \n", receiver.Email)
-			return http.StatusInternalServerError
-		}
-	}
-
-	// UPDATING IN-HOUSE RECEIVER
-	if variables.IsReceiverInDatabase && receiver.Email == variables.ReceiverEmail {
-		receiver.Notifications = append(receiver.Notifications, transaction)
-
-		receiverUpdate := bson.M{"$set": bson.M{"notifications" : receiver.Notifications}}
-
-		resultTwo := users.FindOneAndUpdate(context.Background(), receiverEmailFilter, receiverUpdate)
-
-		if resultTwo.Err() == mongo.ErrNoDocuments {
-			log.Printf("ERROR WITH FINDING AND UPDATING FOR %v: %v \n", receiver.Email ,resultTwo)
-			return http.StatusInternalServerError
-		}
-	}
-
-	// IF SENDER IS NOT IN OUR MONGODB INSTANCE
-	if variables.Email != sender.Email {
 		sender.Email = variables.Email
 
 		sender.Notifications = []models.Transaction{transaction}
@@ -137,20 +124,52 @@ func InsertUserAndNotification(variables struct {
 			log.Printf("ERROR INSERTING DOCUMENTS FOR, %v \n", sender.Email)
 			return http.StatusInternalServerError
 		}
+		status.isSenderUpdated = true
+	}
+
+	if status.isReceiverUpdated && status.isSenderUpdated {
 		return http.StatusOK
 	}
 
 
-	sender.Notifications = append(sender.Notifications, transaction)
-	senderUpdate := bson.M{"$set": bson.M{"notifications" : sender.Notifications}}
+	// UPDATING IN-HOUSE RECEIVER & TRANSFERER
 
-	resultOne := users.FindOneAndUpdate(context.Background(), senderEmailFilter, senderUpdate)
+	if receiver.Email == variables.ReceiverEmail && !status.isReceiverUpdated {
+		receiver.Notifications = append(receiver.Notifications, transaction)
 
+		receiverUpdate := bson.M{"$set": bson.M{"notifications" : receiver.Notifications}}
 
-	if resultOne.Err() == mongo.ErrNoDocuments {
-		log.Printf("ERROR WITH FINDING AND UPDATING FOR %v: %v \n", sender.Email ,resultOne)
-		return http.StatusInternalServerError
+		resultTwo := users.FindOneAndUpdate(context.Background(), receiverEmailFilter, receiverUpdate)
+
+		if resultTwo.Err() == mongo.ErrNoDocuments {
+			log.Printf("ERROR WITH FINDING AND UPDATING FOR %v: %v \n", receiver.Email ,resultTwo)
+			return http.StatusInternalServerError
+		}
+		status.isReceiverUpdated = true
 	}
+
+	if status.isReceiverUpdated && status.isSenderUpdated {
+		status.isReceiverUpdated = false
+		status.isSenderUpdated = false
+		return http.StatusOK
+	}
+
+
+	if variables.Email == sender.Email && !status.isSenderUpdated {
+
+		sender.Notifications = append(sender.Notifications, transaction)
+		senderUpdate := bson.M{"$set": bson.M{"notifications" : sender.Notifications}}
+
+		resultOne := users.FindOneAndUpdate(context.Background(), senderEmailFilter, senderUpdate)
+
+		if resultOne.Err() == mongo.ErrNoDocuments {
+			log.Printf("ERROR WITH FINDING AND UPDATING FOR %v: %v \n", sender.Email ,resultOne)
+			return http.StatusInternalServerError
+		}
+	}
+
+	status.isReceiverUpdated = false
+	status.isSenderUpdated = false
 
 	return http.StatusOK
 }

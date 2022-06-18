@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/Kofi-D-Boateng/legacynotifications/router"
 	"github.com/joho/godotenv"
@@ -19,7 +20,13 @@ func main(){
 	}
 	port := os.Getenv("PORT")
 	
+	srv := &http.Server{
+		Handler: r,
+		Addr: port,
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout: 15* time.Second,
+	}
 	
 	fmt.Printf("Server listening at port%v \n", port)
-	log.Fatal(http.ListenAndServe(port, r))
+	log.Fatal(srv.ListenAndServe())
 }

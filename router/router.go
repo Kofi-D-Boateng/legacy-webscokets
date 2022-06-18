@@ -13,7 +13,7 @@ import (
 func Router() *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
 	// NOTIFICATIONS
-	router.HandleFunc("/api/v1/user", user.GetNotificationsHandler).Methods("GET")
+	router.HandleFunc("/api/v1/user", user.GetNotificationsHandler).Queries("email", "{email}").Methods("GET")
 	router.HandleFunc("/api/v1/user/set-notifications", user.SetNotificationsHandler).Methods("PUT")
 	router.HandleFunc("/api/v1/user/mark-notification", user.MarkNotificationsHandler).Methods("PUT")
 	// VERIFICATION

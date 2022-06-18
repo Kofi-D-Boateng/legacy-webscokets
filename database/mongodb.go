@@ -33,7 +33,7 @@ func init(){
 
 	err := godotenv.Load(filepath.Join(basePath, "../.env"))
 	if err != nil {
-		log.Fatalf("Error: %s", err)
+		fmt.Printf("Error Could not find env file: %s", err)
 	}
 
 	// GRABBING DB INFO
@@ -49,7 +49,7 @@ func init(){
 	if err != nil{
 		log.Fatal(err)
 	}
-	fmt.Println("MongoDB connected")
+	fmt.Printf("MongoDB connected to DB: %v \n", dbName)
 	// Get DB
 	Db = client.Database(dbName)
 }
