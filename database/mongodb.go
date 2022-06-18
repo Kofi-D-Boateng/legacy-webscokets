@@ -5,21 +5,33 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+	"runtime"
 
-	"github.com/Kofi-D-Boateng/legacynotifications/models"
 	"github.com/joho/godotenv"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var Db *mongo.Database
-var UserCollection string;
-var CustomerService string;
+var (
+	Db *mongo.Database
+	UserCollection string
+	CustomerServiceCollection string
+)
+
 
 
 func init(){
-	err := godotenv.Load(".env")
+	_,file,_, ok := runtime.Caller(0)
+	basePath := filepath.Dir(file)
+	fmt.Println(file)
+	fmt.Println(basePath)
+
+	if !ok {
+		log.Fatalf("Unable to find file path: %v", file)
+	}
+
+	err := godotenv.Load(filepath.Join(basePath, "../.env"))
 	if err != nil {
 		log.Fatalf("Error: %s", err)
 	}
@@ -28,7 +40,7 @@ func init(){
 	var dns string = os.Getenv("MONGO_URI")
 	var dbName string = os.Getenv("DB_NAME")
 	UserCollection = os.Getenv("USERS_COLLECTION")
-	CustomerService = os.Getenv("CUSTOMER_SERVICE_COLLECTION")
+	CustomerServiceCollection = os.Getenv("CUSTOMER_SERVICE_COLLECTION")
 
 	// Set options
 	clientOptions := options.Client().ApplyURI(dns)
@@ -42,24 +54,3 @@ func init(){
 	Db = client.Database(dbName)
 }
 
-func InsertUserAndNotification(transaction models.Transaction) bool {
-	fmt.Printf("Transaction: %v \n", transaction)
-	return true
-}
-
-func FindAUser(email string) models.User{
-	var result models.User
-	users := Db.Collection(UserCollection)
-	filter := bson.M{"email":email}
-	err := users.FindOne(context.Background(), filter).Decode(&result)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return result
-}
-
-func MarkMessageAsRead(request models.MarkMessage) bool {
-	fmt.Printf("\n email: %v", request.Email)
-	fmt.Printf("\n email: %v", request.MsgID)
-	return true
-}

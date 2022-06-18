@@ -15,11 +15,11 @@ func main(){
 	err := godotenv.Load(".env")
 	r := router.Router()
 	if err != nil {
-		log.Fatalf("Error: %s", err)
+		log.Fatalf("Error: %s \n", err)
 	}
 	port := os.Getenv("PORT")
 	
 	
-	fmt.Printf("Server listening at port%v", port)
+	fmt.Printf("Server listening at port%v \n", port)
 	log.Fatal(http.ListenAndServe(port, r))
 }
