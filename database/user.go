@@ -62,6 +62,7 @@ func InsertUserAndNotification(variables struct {
 	Amount               float64 `json:"amount"`
 }) int {
 
+
 	var status struct {
 		isReceiverUpdated 	bool
 		isSenderUpdated 	bool
@@ -86,7 +87,7 @@ func InsertUserAndNotification(variables struct {
 	fmt.Println(transaction)
 
 	// BUSINESS LOGIC
-
+  
 	// FIND PERSONNEL
 	errOne := users.FindOne(context.Background(), receiverEmailFilter).Decode(&receiver)
 	errTwo := users.FindOne(context.Background(), senderEmailFilter).Decode(&sender)
@@ -170,6 +171,5 @@ func InsertUserAndNotification(variables struct {
 
 	status.isReceiverUpdated = false
 	status.isSenderUpdated = false
-
 	return http.StatusOK
 }

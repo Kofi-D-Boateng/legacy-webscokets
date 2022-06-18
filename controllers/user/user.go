@@ -13,8 +13,10 @@ import (
 
 func GetNotificationsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	email := r.FormValue("email")	
 	foundUser := database.FindAUser(email)
+  
 	json.NewEncoder(w).Encode(foundUser)
 }
 
