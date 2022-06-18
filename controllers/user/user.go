@@ -8,19 +8,15 @@ import (
 
 	"github.com/Kofi-D-Boateng/legacynotifications/database"
 	"github.com/Kofi-D-Boateng/legacynotifications/models"
-	"github.com/gorilla/schema"
 )
 
 
 func GetNotificationsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	var user models.User
-	decoder := schema.NewDecoder()
-	err := decoder.Decode(&user, r.URL.Query())
-	if err != nil {
-		log.Fatal(err)
-	}
-	foundUser := database.FindAUser(user.Email)
+
+	email := r.FormValue("email")	
+	foundUser := database.FindAUser(email)
+  
 	json.NewEncoder(w).Encode(foundUser)
 }
 

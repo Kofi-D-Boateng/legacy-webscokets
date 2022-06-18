@@ -23,16 +23,3 @@ func TestEmailHandler(t *testing.T){
 	}
 
 }
-
-func TestMailingListHandler(t *testing.T){
-
-	var data string  = "kdboat2@gmail.com"
-	var result int = utils.SendMailingListConfirmation(data)
-
-	if result == 200 {
-		t.Log("Passed test")
-	}else{
-		t.Error("Failed test")
-	}
-
-}
