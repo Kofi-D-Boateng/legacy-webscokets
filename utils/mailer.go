@@ -25,19 +25,25 @@ var (
 
 
 func init() {
-	_,file,_, ok := runtime.Caller(0)
-	basePath := filepath.Dir(file)
-	fmt.Println(file)
-	fmt.Println(basePath)
+	env := os.Getenv("GO_ENV")
+	if env == "dev" {
 
-	if !ok {
-		log.Fatalf("Unable to find file path: %v", file)
+		_,file,_, ok := runtime.Caller(0)
+		basePath := filepath.Dir(file)
+		fmt.Println(file)
+		fmt.Println(basePath)
+
+		if !ok {
+			log.Fatalf("Unable to find file path: %v", file)
+		}
+
+		err := godotenv.Load(filepath.Join(basePath, "../.env"))
+		if err != nil {
+			log.Fatalf("Error: %s", err)
+		}
 	}
 
-	err := godotenv.Load(filepath.Join(basePath, "../.env"))
-	if err != nil {
-		log.Fatalf("Error: %s", err)
-	}
+
 
 	var from string = os.Getenv("COMPANY_EMAIL")
 	var pw string = os.Getenv("COMPANY_PASSWORD")

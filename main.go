@@ -13,11 +13,15 @@ import (
 
 func main(){
 	// GRABBING SET UP ENV VAR
-	err := godotenv.Load(".env")
-	r := router.Router()
-	if err != nil {
-		log.Fatalf("Error: %s \n", err)
+	env := os.Getenv("GO_ENV")
+	if env == "dev"{
+		err := godotenv.Load(".env")
+		if err != nil {
+			log.Fatalf("Error: %s \n", err)
+		}
 	}
+	
+	r := router.Router()
 	port := os.Getenv("PORT")
 	
 	srv := &http.Server{

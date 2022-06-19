@@ -22,18 +22,22 @@ var (
 
 
 func init(){
-	_,file,_, ok := runtime.Caller(0)
-	basePath := filepath.Dir(file)
-	fmt.Println(file)
-	fmt.Println(basePath)
+	env := os.Getenv("GO_ENV")
+	if env == "dev" {
+		
+		_,file,_, ok := runtime.Caller(0)
+		basePath := filepath.Dir(file)
+		fmt.Println(file)
+		fmt.Println(basePath)
 
-	if !ok {
-		log.Fatalf("Unable to find file path: %v", file)
-	}
+		if !ok {
+			log.Fatalf("Unable to find file path: %v", file)
+		}
 
-	err := godotenv.Load(filepath.Join(basePath, "../.env"))
-	if err != nil {
-		fmt.Printf("Error Could not find env file: %s", err)
+		err := godotenv.Load(filepath.Join(basePath, "../.env"))
+		if err != nil {
+			log.Fatalf("Error: %s", err)
+		}
 	}
 
 	// GRABBING DB INFO
