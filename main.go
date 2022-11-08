@@ -19,7 +19,7 @@ import (
 
 
 func init(){
-	os.Setenv("GO_ENV","dev")
+	
 	env := os.Getenv("GO_ENV")
 	if env == "dev" {
 		_,file,_, ok := runtime.Caller(0)
