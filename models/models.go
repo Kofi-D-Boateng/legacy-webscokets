@@ -2,8 +2,14 @@ package models
 
 import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
+type Database struct{
+	Db *mongo.Database
+	UserCollection string
+	CustomerServiceCollection string
+}
 
 type User struct {
 	ID            primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`

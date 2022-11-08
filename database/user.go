@@ -13,10 +13,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-
 func FindAUser(email string) models.User {
 	var result models.User
-	users := Db.Collection(UserCollection)
+	users := Database.Db.Collection(Database.UserCollection)
 	filter := bson.M{"email": email}
 	err := users.FindOne(context.Background(), filter).Decode(&result)
 	if err != nil {
@@ -33,7 +32,7 @@ func MarkMessageAsRead(request models.MarkMessage) models.User {
 	if err != nil {
 		fmt.Printf("Invalid hex string: %v \n",err)
 	}
-	user := Db.Collection(UserCollection)
+	user := Database.Db.Collection(Database.UserCollection)
 	filter := bson.M{"email": request.Email}
 	update := bson.M{"$set": bson.M{"notifications.$[element].read":true }}
 	arrayFilterOptions := options.FindOneAndUpdate().SetArrayFilters(options.ArrayFilters{
@@ -75,7 +74,7 @@ func InsertUserAndNotification(variables struct {
 	var receiver models.User
 	receiverEmailFilter := bson.M{"email": variables.ReceiverEmail}
 	senderEmailFilter := bson.M{"email": variables.Email}
-	users := Db.Collection(UserCollection)
+	users := Database.Db.Collection(Database.UserCollection)
 
 	transaction.ID = primitive.NewObjectID()
 	transaction.Amount = variables.Amount
