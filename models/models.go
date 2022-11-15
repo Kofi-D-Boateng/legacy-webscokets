@@ -46,3 +46,14 @@ type EmailAttributes struct {
 			Email string `json:"email"`
 		} `json:"person"`
 	}
+
+type TransactionNotificationVariables  struct {
+	Email                string  `json:"email"`
+	Receiver             string  `json:"receiver" `
+	ReceiverEmail        string  `json:"receiverEmail"`
+	Sender               string  `json:"sender"`
+	IsReceiverInDatabase bool    `json:"receiverInDatabase"`
+	DateOfTransaction    string `json:"localDateTime"`
+	Type                 string  `json:"type"`
+	Amount               float64 `json:"amount"`
+}	
