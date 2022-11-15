@@ -2,8 +2,14 @@ package models
 
 import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
+type Database struct{
+	Db *mongo.Database
+	UserCollection string
+	CustomerServiceCollection string
+}
 
 type User struct {
 	ID            primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
@@ -40,3 +46,14 @@ type EmailAttributes struct {
 			Email string `json:"email"`
 		} `json:"person"`
 	}
+
+type TransactionNotificationVariables  struct {
+	Email                string  `json:"email"`
+	Receiver             string  `json:"receiver" `
+	ReceiverEmail        string  `json:"receiverEmail"`
+	Sender               string  `json:"sender"`
+	IsReceiverInDatabase bool    `json:"receiverInDatabase"`
+	DateOfTransaction    string `json:"localDateTime"`
+	Type                 string  `json:"type"`
+	Amount               float64 `json:"amount"`
+}	

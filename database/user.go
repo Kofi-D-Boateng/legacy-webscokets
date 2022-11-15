@@ -14,11 +14,12 @@ import (
 )
 
 
+
 func FindAUser(email string) models.User {
 	var result models.User
-	users := Db.Collection(UserCollection)
+	userCollection := Database.Db.Collection(Database.UserCollection)
 	filter := bson.M{"email": email}
-	err := users.FindOne(context.Background(), filter).Decode(&result)
+	err := userCollection.FindOne(context.Background(), filter).Decode(&result)
 	if err != nil {
 		log.Print(err)
 	}
@@ -33,14 +34,14 @@ func MarkMessageAsRead(request models.MarkMessage) models.User {
 	if err != nil {
 		fmt.Printf("Invalid hex string: %v \n",err)
 	}
-	user := Db.Collection(UserCollection)
+	userCollectionPointer := Database.Db.Collection(Database.UserCollection)
 	filter := bson.M{"email": request.Email}
 	update := bson.M{"$set": bson.M{"notifications.$[element].read":true }}
 	arrayFilterOptions := options.FindOneAndUpdate().SetArrayFilters(options.ArrayFilters{
         Filters: []interface{}{bson.M{"element._id": id}},
     })
 	
-	result := user.FindOneAndUpdate(context.Background(), filter, update, arrayFilterOptions)
+	result := userCollectionPointer.FindOneAndUpdate(context.Background(), filter, update, arrayFilterOptions)
 
 	if result == nil {
 		fmt.Printf("Error updating document for:%v",request.Email)
@@ -51,16 +52,7 @@ func MarkMessageAsRead(request models.MarkMessage) models.User {
 	return customer
 }
 
-func InsertUserAndNotification(variables struct {
-	Email                string  `json:"email"`
-	Receiver             string  `json:"receiver" `
-	ReceiverEmail        string  `json:"receiverEmail"`
-	Sender               string  `json:"sender"`
-	IsReceiverInDatabase bool    `json:"receiverInDatabase"`
-	DateOfTransaction    string `json:"localDateTime"`
-	Type                 string  `json:"type"`
-	Amount               float64 `json:"amount"`
-}) int {
+func InsertUserAndNotification(variables models.TransactionNotificationVariables) int {
 
 
 	var status struct {
@@ -75,7 +67,7 @@ func InsertUserAndNotification(variables struct {
 	var receiver models.User
 	receiverEmailFilter := bson.M{"email": variables.ReceiverEmail}
 	senderEmailFilter := bson.M{"email": variables.Email}
-	users := Db.Collection(UserCollection)
+	userCollectionPointer := Database.Db.Collection(Database.UserCollection)
 
 	transaction.ID = primitive.NewObjectID()
 	transaction.Amount = variables.Amount
@@ -89,8 +81,8 @@ func InsertUserAndNotification(variables struct {
 	// BUSINESS LOGIC
   
 	// FIND PERSONNEL
-	errOne := users.FindOne(context.Background(), receiverEmailFilter).Decode(&receiver)
-	errTwo := users.FindOne(context.Background(), senderEmailFilter).Decode(&sender)
+	errOne := userCollectionPointer.FindOne(context.Background(), receiverEmailFilter).Decode(&receiver)
+	errTwo := userCollectionPointer.FindOne(context.Background(), senderEmailFilter).Decode(&sender)
 
 	// USER HAS NOT CREATE INSTANCES FOR PURCHASES YET.
 	if errOne != nil {
@@ -100,7 +92,7 @@ func InsertUserAndNotification(variables struct {
 			receiver.Email = variables.ReceiverEmail
 			receiver.Notifications = []models.Transaction{transaction}
 
-			_, errForReceiver := users.InsertOne(context.Background(), receiver)
+			_, errForReceiver := userCollectionPointer.InsertOne(context.Background(), receiver)
 
 			if errForReceiver  != nil {
 				log.Printf("ERROR INSERTING DOCUMENTS FOR %v \n", receiver.Email)
@@ -119,7 +111,7 @@ func InsertUserAndNotification(variables struct {
 
 		sender.Notifications = []models.Transaction{transaction}
 
-		_, errForSender := users.InsertOne(context.Background(), sender)
+		_, errForSender := userCollectionPointer.InsertOne(context.Background(), sender)
 
 		if errForSender  != nil {
 			log.Printf("ERROR INSERTING DOCUMENTS FOR, %v \n", sender.Email)
@@ -140,7 +132,7 @@ func InsertUserAndNotification(variables struct {
 
 		receiverUpdate := bson.M{"$set": bson.M{"notifications" : receiver.Notifications}}
 
-		resultTwo := users.FindOneAndUpdate(context.Background(), receiverEmailFilter, receiverUpdate)
+		resultTwo := userCollectionPointer.FindOneAndUpdate(context.Background(), receiverEmailFilter, receiverUpdate)
 
 		if resultTwo.Err() == mongo.ErrNoDocuments {
 			log.Printf("ERROR WITH FINDING AND UPDATING FOR %v: %v \n", receiver.Email ,resultTwo)
@@ -161,7 +153,7 @@ func InsertUserAndNotification(variables struct {
 		sender.Notifications = append(sender.Notifications, transaction)
 		senderUpdate := bson.M{"$set": bson.M{"notifications" : sender.Notifications}}
 
-		resultOne := users.FindOneAndUpdate(context.Background(), senderEmailFilter, senderUpdate)
+		resultOne := userCollectionPointer.FindOneAndUpdate(context.Background(), senderEmailFilter, senderUpdate)
 
 		if resultOne.Err() == mongo.ErrNoDocuments {
 			log.Printf("ERROR WITH FINDING AND UPDATING FOR %v: %v \n", sender.Email ,resultOne)

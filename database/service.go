@@ -25,7 +25,7 @@ func SendToOther(details models.CustomerServiceMessage) int {
 	filter := bson.M{"department": deptName}
 	update := bson.M{"$push": bson.M{"queue":details}}
 	
-	cs := Db.Collection(CustomerServiceCollection)
+	cs := Database.Db.Collection(Database.CustomerServiceCollection)
 	result := cs.FindOneAndUpdate(context.Background(), filter, update)
 
 	if result.Err() == mongo.ErrNoDocuments {
@@ -61,7 +61,7 @@ func SendToAccountDept(details models.CustomerServiceMessage) int {
 	filter := bson.M{"department": deptName}
 	update := bson.M{"$push": bson.M{"queue":details}}
 	
-	cs := Db.Collection(CustomerServiceCollection)
+	cs := Database.Db.Collection(Database.CustomerServiceCollection)
 	result := cs.FindOneAndUpdate(context.Background(), filter, update)
 
 	
@@ -94,7 +94,7 @@ func SendToBillingDept(details models.CustomerServiceMessage) int{
 	filter := bson.M{"department": deptName}
 	update := bson.M{"$push": bson.M{"queue":details}}
 	
-	cs := Db.Collection(CustomerServiceCollection)
+	cs := Database.Db.Collection(Database.CustomerServiceCollection)
 	result := cs.FindOneAndUpdate(context.Background(), filter, update)
 
 	
