@@ -1,9 +1,11 @@
-package database
+package utils
 
 import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"regexp"
 
 	"github.com/Kofi-D-Boateng/legacynotifications/models"
 	"go.mongodb.org/mongo-driver/bson"
@@ -12,9 +14,33 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+var (
+	EmailExpr *regexp.Regexp
+	Accounts  *regexp.Regexp
+	Billing   *regexp.Regexp
+	Database  *mongo.Database
+)
+
+func ConnectDatabase(uri string, dbName string) {
+	clientOptions := options.Client().ApplyURI(uri)
+	client, err := mongo.Connect(context.TODO(), clientOptions)
+
+	if err != nil {
+		panic(err)
+	}
+
+	pingErr := client.Ping(context.Background(), nil)
+
+	if pingErr != nil {
+		panic(pingErr)
+	}
+
+	Database = client.Database(dbName)
+}
+
 func FindAUser(email string) models.User {
 	var result models.User
-	userCollection := Database.Db.Collection(Database.UserCollection)
+	userCollection := Database.Collection(os.Getenv("USERS_COLLECTION"))
 	filter := bson.M{"email": email}
 	err := userCollection.FindOne(context.Background(), filter).Decode(&result)
 	if err != nil {
@@ -31,7 +57,7 @@ func MarkMessageAsRead(request models.MarkMessage) models.User {
 	if err != nil {
 		fmt.Printf("Invalid hex string: %v \n", err)
 	}
-	userCollectionPointer := Database.Db.Collection(Database.UserCollection)
+	userCollectionPointer := Database.Collection(os.Getenv("USERS_COLLECTION"))
 	filter := bson.M{"email": request.Email}
 	update := bson.M{"$set": bson.M{"notifications.$[element].read": true}}
 	arrayFilterOptions := options.FindOneAndUpdate().SetArrayFilters(options.ArrayFilters{
@@ -63,7 +89,7 @@ func InsertUserAndNotification(variables models.TransactionNotificationVariables
 	var receiver models.User
 	receiverEmailFilter := bson.M{"email": variables.ReceiverEmail}
 	senderEmailFilter := bson.M{"email": variables.Email}
-	userCollectionPointer := Database.Db.Collection(Database.UserCollection)
+	userCollectionPointer := Database.Collection(os.Getenv("USERS_COLLECTION"))
 
 	transaction.ID = primitive.NewObjectID()
 	transaction.Amount = variables.Amount
@@ -156,4 +182,89 @@ func InsertUserAndNotification(variables models.TransactionNotificationVariables
 
 	status.isReceiverUpdated = false
 	status.isSenderUpdated = false
+}
+
+func SendToOther(details models.CustomerServiceMessage) {
+
+	var dept struct {
+		Department string                          `json:"department" bson:"department"`
+		Queue      []models.CustomerServiceMessage `json:"queue" bson:"queue"`
+	}
+
+	details.ID = primitive.NewObjectID()
+	deptName := "Other"
+	filter := bson.M{"department": deptName}
+	update := bson.M{"$push": bson.M{"queue": details}}
+
+	cs := Database.Collection(os.Getenv("CUSTOMER_SERVICE_COLLECTION"))
+	result := cs.FindOneAndUpdate(context.Background(), filter, update)
+
+	if result.Err() == mongo.ErrNoDocuments {
+		// DOCUMENT NOT FOUND
+		log.Printf("Error grabbing dept: %s, Creating department now.... \n", dept.Department)
+		dept.Department = deptName
+		dept.Queue = append(dept.Queue, details)
+		fmt.Print(dept)
+		_, err := cs.InsertOne(context.Background(), dept)
+
+		if err != nil {
+			log.Printf("Error saving to dept: %s\n %v \n", deptName, err)
+		}
+	}
+}
+
+func SendToAccountDept(details models.CustomerServiceMessage) {
+
+	var dept struct {
+		Department string                          `json:"department" bson:"department"`
+		Queue      []models.CustomerServiceMessage `json:"queue" bson:"queue"`
+	}
+
+	details.ID = primitive.NewObjectID()
+	deptName := "Accounts"
+	filter := bson.M{"department": deptName}
+	update := bson.M{"$push": bson.M{"queue": details}}
+
+	cs := Database.Collection(os.Getenv("CUSTOMER_SERVICE_COLLECTION"))
+	result := cs.FindOneAndUpdate(context.Background(), filter, update)
+
+	if result.Err() == mongo.ErrNoDocuments {
+		// DOCUMENT NOT FOUND
+		log.Printf("Error grabbing dept: %s, Creating department now.... \n", dept.Department)
+		dept.Department = deptName
+		dept.Queue = append(dept.Queue, details)
+		fmt.Print(dept)
+		_, err := cs.InsertOne(context.Background(), dept)
+
+		if err != nil {
+			log.Printf("Error saving to dept: %s\n %v \n", deptName, err)
+		}
+	}
+}
+
+func SendToBillingDept(details models.CustomerServiceMessage) {
+
+	var dept struct {
+		Department string                          `json:"department" bson:"department"`
+		Queue      []models.CustomerServiceMessage `json:"queue" bson:"queue"`
+	}
+	deptName := "Billing"
+	filter := bson.M{"department": deptName}
+	update := bson.M{"$push": bson.M{"queue": details}}
+
+	cs := Database.Collection(os.Getenv("CUSTOMER_SERVICE_COLLECTION"))
+	result := cs.FindOneAndUpdate(context.Background(), filter, update)
+
+	if result.Err() == mongo.ErrNoDocuments {
+		// DOCUMENT NOT FOUND
+		log.Printf("Error grabbing dept: %s, Creating department now.... \n", dept.Department)
+		dept.Department = deptName
+		dept.Queue = append(dept.Queue, details)
+		fmt.Print(dept)
+		_, err := cs.InsertOne(context.Background(), dept)
+
+		if err != nil {
+			log.Printf("Error saving to dept: %s\n %v \n", deptName, err)
+		}
+	}
 }

@@ -4,14 +4,14 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/Kofi-D-Boateng/legacynotifications/database"
+	"github.com/Kofi-D-Boateng/legacynotifications/utils"
 )
 
 func GetNotificationsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	email := r.FormValue("email")
-	foundUser := database.FindAUser(email)
+	foundUser := utils.FindAUser(email)
 
-	json.NewEncoder(w).Encode(foundUser)
+	json.NewEncoder(w).Encode(foundUser.Notifications)
 }
