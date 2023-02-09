@@ -40,7 +40,7 @@ func ConnectDatabase(uri string, dbName string) {
 
 func FindAUser(email string) models.User {
 	var result models.User
-	userCollection := Database.Collection(os.Getenv("USERS_COLLECTION"))
+	userCollection := Database.Collection(os.Getenv("USER_COLLECTION"))
 	filter := bson.M{"email": email}
 	err := userCollection.FindOne(context.Background(), filter).Decode(&result)
 	if err != nil {
@@ -57,7 +57,7 @@ func MarkMessageAsRead(request models.MarkMessage) models.User {
 	if err != nil {
 		fmt.Printf("Invalid hex string: %v \n", err)
 	}
-	userCollectionPointer := Database.Collection(os.Getenv("USERS_COLLECTION"))
+	userCollectionPointer := Database.Collection(os.Getenv("USER_COLLECTION"))
 	filter := bson.M{"email": request.Email}
 	update := bson.M{"$set": bson.M{"notifications.$[element].read": true}}
 	arrayFilterOptions := options.FindOneAndUpdate().SetArrayFilters(options.ArrayFilters{
@@ -89,7 +89,7 @@ func InsertUserAndNotification(variables models.TransactionNotificationVariables
 	var receiver models.User
 	receiverEmailFilter := bson.M{"email": variables.ReceiverEmail}
 	senderEmailFilter := bson.M{"email": variables.Email}
-	userCollectionPointer := Database.Collection(os.Getenv("USERS_COLLECTION"))
+	userCollectionPointer := Database.Collection(os.Getenv("USER_COLLECTION"))
 
 	transaction.ID = primitive.NewObjectID()
 	transaction.Amount = variables.Amount
