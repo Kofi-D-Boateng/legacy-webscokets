@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"time"
 
 	"github.com/Kofi-D-Boateng/legacynotifications/models"
 	"go.mongodb.org/mongo-driver/bson"
@@ -75,27 +76,27 @@ func MarkMessageAsRead(request models.MarkMessage) models.User {
 	return customer
 }
 
-func InsertUserAndNotification(variables models.TransactionNotificationVariables) {
+func InsertUserAndNotification(request models.TransactionNotificationVariables) {
 
 	var status struct {
 		isReceiverUpdated bool
 		isSenderUpdated   bool
 	}
 
-	fmt.Printf("RECEIVER STATUS: %v \n SENDER STATUS: %v \n", status.isReceiverUpdated, status.isSenderUpdated)
-
 	var transaction models.Transaction
 	var sender models.User
 	var receiver models.User
-	receiverEmailFilter := bson.M{"email": variables.ReceiverEmail}
-	senderEmailFilter := bson.M{"email": variables.Email}
+
+	receiverEmailFilter := bson.M{"email": request.ReceiverEmail}
+	senderEmailFilter := bson.M{"email": request.Email}
 	userCollectionPointer := Database.Collection(os.Getenv("USER_COLLECTION"))
 
+	dot := time.Date(request.DateOfTransaction[0], time.Month(request.DateOfTransaction[1]), request.DateOfTransaction[2], request.DateOfTransaction[3], request.DateOfTransaction[4], request.DateOfTransaction[5], request.DateOfTransaction[6], time.UTC)
 	transaction.ID = primitive.NewObjectID()
-	transaction.Amount = variables.Amount
-	transaction.Date = variables.DateOfTransaction
-	transaction.Receiver = variables.Receiver
-	transaction.Sender = variables.Sender
+	transaction.Amount = request.Amount
+	transaction.Date = dot.Format("2006-01-02T15:04:05.999")
+	transaction.Receiver = request.Receiver
+	transaction.Sender = request.Sender
 	transaction.Read = false
 
 	fmt.Println(transaction)
@@ -108,10 +109,10 @@ func InsertUserAndNotification(variables models.TransactionNotificationVariables
 
 	// USER HAS NOT CREATE INSTANCES FOR PURCHASES YET.
 	if errOne != nil {
-		log.Printf("COULD NOT FIND RECIPIENT: %v in database, Attempting to create notifications if user is in main db.... \n", variables.Receiver)
+		log.Printf("COULD NOT FIND RECIPIENT: %v in database, Attempting to create notifications if user is in main db.... \n", request.Receiver)
 		receiver.ID = primitive.NewObjectID()
-		if variables.IsReceiverInDatabase {
-			receiver.Email = variables.ReceiverEmail
+		if request.IsReceiverInDatabase {
+			receiver.Email = request.ReceiverEmail
 			receiver.Notifications = []models.Transaction{transaction}
 
 			_, errForReceiver := userCollectionPointer.InsertOne(context.Background(), receiver)
@@ -126,9 +127,9 @@ func InsertUserAndNotification(variables models.TransactionNotificationVariables
 
 	// USER HAS NOT CREATE INSTANCES FOR PURCHASES YET.
 	if errTwo != nil {
-		log.Printf("COULD NOT FIND TRASFERER: %v in database, Attempting to create notifications \n", variables.Sender)
+		log.Printf("COULD NOT FIND TRASFERER: %v in database, Attempting to create notifications \n", request.Sender)
 		sender.ID = primitive.NewObjectID()
-		sender.Email = variables.Email
+		sender.Email = request.Email
 
 		sender.Notifications = []models.Transaction{transaction}
 
@@ -147,7 +148,7 @@ func InsertUserAndNotification(variables models.TransactionNotificationVariables
 
 	// UPDATING IN-HOUSE RECEIVER & TRANSFERER
 
-	if receiver.Email == variables.ReceiverEmail && !status.isReceiverUpdated {
+	if receiver.Email == request.ReceiverEmail && !status.isReceiverUpdated {
 		receiver.Notifications = append(receiver.Notifications, transaction)
 
 		receiverUpdate := bson.M{"$set": bson.M{"notifications": receiver.Notifications}}
@@ -167,7 +168,7 @@ func InsertUserAndNotification(variables models.TransactionNotificationVariables
 		return
 	}
 
-	if variables.Email == sender.Email && !status.isSenderUpdated {
+	if request.Email == sender.Email && !status.isSenderUpdated {
 
 		sender.Notifications = append(sender.Notifications, transaction)
 		senderUpdate := bson.M{"$set": bson.M{"notifications": sender.Notifications}}
