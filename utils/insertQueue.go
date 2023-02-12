@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/Kofi-D-Boateng/legacynotifications/models"
@@ -31,7 +32,7 @@ func StartInsertQueue(conn *amqp.Connection) {
 	if err != nil {
 		log.Fatalf("Failed to declare the queue: %v", err)
 	}
-
+	fmt.Printf("QUEUE NAME & CONSUMERS: %v & %v\n", queue.Name, queue.Consumers)
 	err = ch.QueueBind(
 		queue.Name,
 		"insert",
@@ -44,13 +45,12 @@ func StartInsertQueue(conn *amqp.Connection) {
 	}
 
 	go func() {
-		msgs, err := ch.Consume(queue.Name, "", false, false, false, false, nil)
+		msgs, err := ch.Consume(queue.Name, "", true, false, false, false, nil)
 		if err != nil {
 			log.Fatalf("Error consuming from %v. %v", queue.Name, err)
 		}
 		for msg := range msgs {
-			msg.Ack(false)
-			log.Printf("Received a message: %v", msg.AppId)
+			log.Printf("Received a message in %v\n", queue.Name)
 			var notification models.TransactionNotificationVariables
 			err := json.Unmarshal(msg.Body, &notification)
 			if err != nil {

@@ -64,15 +64,9 @@ func main() {
 	defer conn.Close()
 
 	utils.StartMaillistQueue(conn)
-
 	utils.StartUpdateQueue(conn)
-
 	utils.StartInsertQueue(conn)
-
 	utils.StartVerificationQueue(conn)
-
-	utils.StartMaillistQueue(conn)
-
 	utils.StartCustomerServiceQueue(conn)
 
 	r := router.Router()

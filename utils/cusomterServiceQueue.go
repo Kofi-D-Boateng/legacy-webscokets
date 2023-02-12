@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/Kofi-D-Boateng/legacynotifications/models"
@@ -31,7 +32,7 @@ func StartCustomerServiceQueue(conn *amqp.Connection) {
 	if err != nil {
 		log.Fatalf("Failed to declare the queue: %v", err)
 	}
-
+	fmt.Printf("QUEUE NAME & CONSUMERS: %v & %v\n", queue.Name, queue.Consumers)
 	err = ch.QueueBind(
 		queue.Name,
 		"cust-serv",
@@ -44,12 +45,12 @@ func StartCustomerServiceQueue(conn *amqp.Connection) {
 	}
 
 	go func() {
-		msgs, err := ch.Consume(queue.Name, "", false, false, false, false, nil)
+		msgs, err := ch.Consume(queue.Name, "", true, false, false, false, nil)
 		if err != nil {
 			log.Fatalf("Error consuming from %v. %v", queue.Name, err)
 		}
 		for msg := range msgs {
-			msg.Ack(false)
+			log.Printf("Received a message in %v\n", queue.Name)
 			var request models.CustomerServiceMessage
 			err = json.Unmarshal([]byte(msg.Body), &request)
 			if err != nil {
@@ -70,7 +71,6 @@ func StartCustomerServiceQueue(conn *amqp.Connection) {
 
 				SendToOther(request)
 			}
-			log.Printf("Received a message: %v", request)
 		}
 		defer ch.Close()
 	}()

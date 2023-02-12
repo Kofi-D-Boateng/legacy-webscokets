@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/Kofi-D-Boateng/legacynotifications/models"
@@ -32,7 +33,7 @@ func StartUpdateQueue(conn *amqp.Connection) {
 	if decErr != nil {
 		log.Fatalf("Failed to bind queue to exchange: %v", err)
 	}
-
+	fmt.Printf("QUEUE NAME & CONSUMERS: %v & %v\n", queue.Name, queue.Consumers)
 	err = ch.QueueBind(
 		queue.Name,
 		"update",
@@ -46,21 +47,21 @@ func StartUpdateQueue(conn *amqp.Connection) {
 	}
 
 	go func() {
-		msgs, err := ch.Consume(queue.Name, "", false, false, false, false, nil)
+		msgs, err := ch.Consume(queue.Name, "", true, false, false, false, nil)
 		if err != nil {
 			log.Fatalf("Error consuming from %v. %v", queue.Name, err)
 		}
 		for msg := range msgs {
-			msg.Ack(false)
+			log.Printf("Received a message in %v\n", queue.Name)
 			var markMessage models.MarkMessage
 			log.Printf("Received a message: %v", msg)
 			err = json.Unmarshal([]byte(msg.Body), &markMessage)
 			if err != nil {
 				log.Printf("Error unmarshalling message: %s", err)
 				continue
+			} else {
+				MarkMessageAsRead(markMessage)
 			}
-			log.Printf("Received a message: %v", markMessage)
-			MarkMessageAsRead(markMessage)
 		}
 		defer ch.Close()
 	}()

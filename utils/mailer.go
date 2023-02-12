@@ -118,6 +118,6 @@ func SendMailingListConfirmation(email string) {
 	err := smtp.SendMail(smptHost+":"+smtpPort, auth, companyEmail, []string{email}, []byte(msg))
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 }

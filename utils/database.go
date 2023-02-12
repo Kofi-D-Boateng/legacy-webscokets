@@ -99,8 +99,6 @@ func InsertUserAndNotification(request models.TransactionNotificationVariables) 
 	transaction.Sender = request.Sender
 	transaction.Read = false
 
-	fmt.Println(transaction)
-
 	// BUSINESS LOGIC
 
 	// FIND PERSONNEL
