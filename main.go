@@ -1,28 +1,26 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"time"
 
-	"github.com/Kofi-D-Boateng/legacynotifications/database"
 	"github.com/Kofi-D-Boateng/legacynotifications/router"
+	"github.com/Kofi-D-Boateng/legacynotifications/utils"
 	"github.com/joho/godotenv"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/streadway/amqp"
 )
 
-
-func init(){
-
+func init() {
+	os.Setenv("GO_ENV", "dev")
 	env := os.Getenv("GO_ENV")
 	if env == "dev" {
-		_,file,_, ok := runtime.Caller(0)
+		_, file, _, ok := runtime.Caller(0)
 		basePath := filepath.Dir(file)
 		fmt.Println(file)
 		fmt.Println(basePath)
@@ -37,39 +35,52 @@ func init(){
 		}
 	}
 
-	// GRABBING DB INFO
-	var dns string = os.Getenv("MONGO_URI")
-	var dbName string = os.Getenv("DB_NAME")
-	database.Database.UserCollection = os.Getenv("USERS_COLLECTION")
-	database.Database.CustomerServiceCollection = os.Getenv("CUSTOMER_SERVICE_COLLECTION")
+	email, checkOne := regexp.Compile(`.+@.+\..+`)
+	account, checkTwo := regexp.Compile(`(?i)\\Account.$|Accounts.$|Transfer.$\\`)
+	billing, checkThree := regexp.Compile(`(?i)\\billing.$|notice.$|\\`)
 
-	// Set options
-	clientOptions := options.Client().ApplyURI(dns)
-	client, err := mongo.Connect(context.TODO(),clientOptions)
-
-	if err != nil{
-		log.Fatal(err)
+	if checkOne != nil {
+		log.Fatalf("Error with compiling regex partner for %s:  %v \n", email, checkOne)
 	}
-	fmt.Printf("MongoDB connected to DB: %v \n", dbName)
-	// Get DB
-	database.Database.Db = client.Database(dbName)
+	if checkTwo != nil {
+		log.Fatalf("Error with compiling regex partner for %s:  %v \n", account, checkTwo)
+	}
+	if checkThree != nil {
+		log.Fatalf("Error with compiling regex partner for %s:  %v \n", billing, checkThree)
+	}
+
+	utils.EmailExpr = email
+	utils.Accounts = account
+	utils.Billing = billing
 }
 
+func main() {
 
-func main(){
-	// GRABBING SET UP ENV VAR
-	
+	conn, err := amqp.Dial(os.Getenv("RABBITMQ_CONN"))
+	if err != nil {
+		panic(err)
+	}
+
+	defer conn.Close()
+
+	utils.StartMaillistQueue(conn)
+	utils.StartUpdateQueue(conn)
+	utils.StartInsertQueue(conn)
+	utils.StartVerificationQueue(conn)
+	utils.StartCustomerServiceQueue(conn)
+
 	r := router.Router()
 	port := os.Getenv("PORT")
-	
+	utils.ConnectDatabase(os.Getenv("MONGO_URI"), os.Getenv("DB_NAME"))
+
 	srv := &http.Server{
-		Handler: r,
-		Addr: port,
+		Handler:      r,
+		Addr:         port,
 		WriteTimeout: 15 * time.Second,
-		ReadTimeout: 15* time.Second,
+		ReadTimeout:  15 * time.Second,
 	}
-	
+
 	fmt.Printf("Server listening at port%v \n", port)
-  
+
 	log.Fatal(srv.ListenAndServe())
 }

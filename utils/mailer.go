@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net/http"
 	"net/smtp"
 	"os"
 	"path/filepath"
@@ -14,21 +13,19 @@ import (
 	"github.com/joho/godotenv"
 )
 
-
 var (
 	companyEmail string
-	link string
-	password string
-	smptHost string
-	smtpPort string
+	link         string
+	password     string
+	smptHost     string
+	smtpPort     string
 )
-
 
 func init() {
 	env := os.Getenv("GO_ENV")
 	if env == "dev" {
 
-		_,file,_, ok := runtime.Caller(0)
+		_, file, _, ok := runtime.Caller(0)
 		basePath := filepath.Dir(file)
 		fmt.Println(file)
 		fmt.Println(basePath)
@@ -42,8 +39,6 @@ func init() {
 			log.Fatalf("Error: %s", err)
 		}
 	}
-
-
 
 	var from string = os.Getenv("COMPANY_EMAIL")
 	var pw string = os.Getenv("COMPANY_PASSWORD")
@@ -60,7 +55,7 @@ func init() {
 }
 
 type loginAuthStruct struct {
-  username, password string
+	username, password string
 }
 
 func loginAuth(username, password string) smtp.Auth {
@@ -85,36 +80,32 @@ func (a *loginAuthStruct) Next(fromServer []byte, more bool) ([]byte, error) {
 	return nil, nil
 }
 
-func SendConfirmationEmail(attributes models.EmailAttributes) int {
+func SendConfirmationEmail(attributes models.EmailAttributes) {
 
 	auth := loginAuth(companyEmail, password)
 
-	var msg string 
+	var msg string
 	if attributes.Person.Name != "" {
-		msg = fmt.Sprintf("Thank you %s for opening an account an account with Legacy Bank. Please click on the link below to verify your account. %s?token=%s",attributes.Person.Name, link, attributes.Token)
-	}else {
-		msg = fmt.Sprintf("You have requested a new link to verify your account. Please click on the link below to verify your account. %s?token=%s",link,attributes.Token)
+		msg = fmt.Sprintf("Thank you %s for opening an account an account with Legacy Bank. Please click on the link below to verify your account. %s?token=%s", attributes.Person.Name, link, attributes.Token)
+	} else {
+		msg = fmt.Sprintf("You have requested a new link to verify your account. Please click on the link below to verify your account. %s?token=%s", link, attributes.Token)
 	}
 
 	from := fmt.Sprintf("From: <%s>\r\n", companyEmail)
 	to := fmt.Sprintf("To: <%s>\r\n", attributes.Person.Name)
 	subject := "Thank you for joining the mailing list\r\n"
-	body := msg +"\r\n"
+	body := msg + "\r\n"
 
-	message := from+to+subject+"\r\n"+body
+	message := from + to + subject + "\r\n" + body
 
-	err := smtp.SendMail(smptHost+":"+smtpPort ,auth,companyEmail,[]string{attributes.Person.Email},[]byte(message))
+	err := smtp.SendMail(smptHost+":"+smtpPort, auth, companyEmail, []string{attributes.Person.Email}, []byte(message))
 
 	if err != nil {
 		fmt.Printf("Cannot send email. Error: %v", err)
-		return http.StatusAccepted
 	}
-
-	return http.StatusOK
-
 }
 
-func SendMailingListConfirmation (email string) int {
+func SendMailingListConfirmation(email string) {
 	auth := loginAuth(companyEmail, password)
 
 	from := fmt.Sprintf("From: <%s>\r\n", companyEmail)
@@ -122,14 +113,11 @@ func SendMailingListConfirmation (email string) int {
 	subject := "Thank you for joining the mailing list\r\n"
 	body := "Thank you for joining submitting your email to the maillist! This is a fake end point for demonstration therefore your email will not be stored.\r\n-Kofi Boateng\r\n"
 
-	msg := from+to+subject+"\r\n"+body
-		
-	err := smtp.SendMail(smptHost+":"+smtpPort ,auth,companyEmail,[]string{email},[]byte(msg))
+	msg := from + to + subject + "\r\n" + body
+
+	err := smtp.SendMail(smptHost+":"+smtpPort, auth, companyEmail, []string{email}, []byte(msg))
 
 	if err != nil {
-		log.Fatal(err)
-		return http.StatusInternalServerError
+		log.Println(err)
 	}
-
-	return http.StatusOK
 }
