@@ -54,7 +54,6 @@ func StartUpdateQueue(conn *amqp.Connection) {
 		for msg := range msgs {
 			log.Printf("Received a message in %v\n", queue.Name)
 			var markMessage models.MarkMessage
-			log.Printf("Received a message: %v", msg)
 			err = json.Unmarshal([]byte(msg.Body), &markMessage)
 			if err != nil {
 				log.Printf("Error unmarshalling message: %s", err)

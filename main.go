@@ -52,6 +52,21 @@ func init() {
 	utils.EmailExpr = email
 	utils.Accounts = account
 	utils.Billing = billing
+
+
+	var from string = os.Getenv("COMPANY_EMAIL")
+	var pw string = os.Getenv("COMPANY_PASSWORD")
+	var host string = os.Getenv("SMTP_HOST")
+	var port string = os.Getenv("SMTP_PORT")
+	var accountAuthLink string = os.Getenv("ACCT_AUTH_LINK")
+
+	utils.Password = pw
+	utils.CompanyEmail = from
+	utils.Link = accountAuthLink
+	utils.SmptHost = host
+	utils.SmtpPort = port
+
+
 }
 
 func main() {
