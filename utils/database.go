@@ -39,24 +39,26 @@ func ConnectDatabase(uri string, dbName string) {
 	Database = client.Database(dbName)
 }
 
-func FindAUser(email string) models.User {
+func FindAUser(email string) (models.User, error) {
 	var result models.User
 	userCollection := Database.Collection(os.Getenv("USER_COLLECTION"))
 	filter := bson.M{"email": email}
 	err := userCollection.FindOne(context.Background(), filter).Decode(&result)
 	if err != nil {
 		log.Print(err)
+		return models.User{},err
 	}
-	return result
+	return result,nil
 }
 
-func MarkMessageAsRead(request models.MarkMessage) models.User {
+func MarkMessageAsRead(request models.MarkMessage) (models.User,error) {
 	fmt.Printf("\n email: %v \n", request.Email)
 	fmt.Printf("\n id: %v \n", request.MsgID)
 
 	id, err := primitive.ObjectIDFromHex(request.MsgID)
 	if err != nil {
 		fmt.Printf("Invalid hex string: %v \n", err)
+		return models.User{},err
 	}
 	userCollectionPointer := Database.Collection(os.Getenv("USER_COLLECTION"))
 	filter := bson.M{"email": request.Email}
@@ -69,14 +71,20 @@ func MarkMessageAsRead(request models.MarkMessage) models.User {
 
 	if result == nil {
 		fmt.Printf("Error updating document for:%v", request.Email)
+		return models.User{},err
 	}
 
-	customer := FindAUser(request.Email)
+	customer,err := FindAUser(request.Email)
 
-	return customer
+	if err != nil {
+		fmt.Printf("Error retrieving document for:%v", request.Email)
+		return models.User{},err
+	}
+
+	return customer,nil
 }
 
-func InsertUserAndNotification(request models.TransactionNotificationVariables) {
+func InsertUserAndNotification(request models.TransactionNotificationVariables) error {
 
 	var status struct {
 		isReceiverUpdated bool
@@ -117,7 +125,7 @@ func InsertUserAndNotification(request models.TransactionNotificationVariables) 
 
 			if errForReceiver != nil {
 				log.Printf("ERROR INSERTING DOCUMENTS FOR %v \n", receiver.Email)
-				return
+				return errForReceiver
 			}
 		}
 		status.isReceiverUpdated = true
@@ -135,13 +143,13 @@ func InsertUserAndNotification(request models.TransactionNotificationVariables) 
 
 		if errForSender != nil {
 			log.Printf("ERROR INSERTING DOCUMENTS FOR, %v \n", sender.Email)
-			return
+			return errForSender
 		}
 		status.isSenderUpdated = true
 	}
 
 	if status.isReceiverUpdated && status.isSenderUpdated {
-		return
+		return nil
 	}
 
 	// UPDATING IN-HOUSE RECEIVER & TRANSFERER
@@ -155,7 +163,7 @@ func InsertUserAndNotification(request models.TransactionNotificationVariables) 
 
 		if resultTwo.Err() == mongo.ErrNoDocuments {
 			log.Printf("ERROR WITH FINDING AND UPDATING FOR %v: %v \n", receiver.Email, resultTwo)
-			return
+			return resultTwo.Err()
 		}
 		status.isReceiverUpdated = true
 	}
@@ -163,7 +171,7 @@ func InsertUserAndNotification(request models.TransactionNotificationVariables) 
 	if status.isReceiverUpdated && status.isSenderUpdated {
 		status.isReceiverUpdated = false
 		status.isSenderUpdated = false
-		return
+		return nil
 	}
 
 	if request.Email == sender.Email && !status.isSenderUpdated {
@@ -175,15 +183,16 @@ func InsertUserAndNotification(request models.TransactionNotificationVariables) 
 
 		if resultOne.Err() == mongo.ErrNoDocuments {
 			log.Printf("ERROR WITH FINDING AND UPDATING FOR %v: %v \n", sender.Email, resultOne)
-			return
+			return resultOne.Err()
 		}
 	}
 
 	status.isReceiverUpdated = false
 	status.isSenderUpdated = false
+	return nil
 }
 
-func SendToOther(details models.CustomerServiceMessage) {
+func SendToOther(details models.CustomerServiceMessage) error {
 
 	var dept struct {
 		Department string                          `json:"department" bson:"department"`
@@ -208,11 +217,13 @@ func SendToOther(details models.CustomerServiceMessage) {
 
 		if err != nil {
 			log.Printf("Error saving to dept: %s\n %v \n", deptName, err)
+			return err
 		}
 	}
+	return nil
 }
 
-func SendToAccountDept(details models.CustomerServiceMessage) {
+func SendToAccountDept(details models.CustomerServiceMessage) error {
 
 	var dept struct {
 		Department string                          `json:"department" bson:"department"`
@@ -237,11 +248,13 @@ func SendToAccountDept(details models.CustomerServiceMessage) {
 
 		if err != nil {
 			log.Printf("Error saving to dept: %s\n %v \n", deptName, err)
+			return err;
 		}
 	}
+	return nil
 }
 
-func SendToBillingDept(details models.CustomerServiceMessage) {
+func SendToBillingDept(details models.CustomerServiceMessage) error {
 
 	var dept struct {
 		Department string                          `json:"department" bson:"department"`
@@ -264,6 +277,8 @@ func SendToBillingDept(details models.CustomerServiceMessage) {
 
 		if err != nil {
 			log.Printf("Error saving to dept: %s\n %v \n", deptName, err)
+			return err;
 		}
 	}
+	return nil
 }

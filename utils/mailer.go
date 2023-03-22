@@ -43,7 +43,7 @@ func (a *loginAuthStruct) Next(fromServer []byte, more bool) ([]byte, error) {
 	return nil, nil
 }
 
-func SendConfirmationEmail(attributes models.EmailAttributes) {
+func SendConfirmationEmail(attributes models.EmailAttributes) error {
 
 	auth := loginAuth(CompanyEmail, Password)
 
@@ -65,10 +65,12 @@ func SendConfirmationEmail(attributes models.EmailAttributes) {
 
 	if err != nil {
 		fmt.Printf("Cannot send email. Error: %v", err)
+		return err
 	}
+	return nil
 }
 
-func SendMailingListConfirmation(email string) {
+func SendMailingListConfirmation(email string) error {
 	auth := loginAuth(CompanyEmail, Password)
 
 	from := fmt.Sprintf("From: <%s>\r\n", CompanyEmail)
@@ -82,5 +84,7 @@ func SendMailingListConfirmation(email string) {
 
 	if err != nil {
 		log.Println(err)
+		return err
 	}
+	return nil
 }

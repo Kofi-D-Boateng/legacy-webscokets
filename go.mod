@@ -2,10 +2,7 @@ module github.com/Kofi-D-Boateng/legacynotifications
 
 go 1.18
 
-require (
-	github.com/gorilla/mux v1.8.0
-	github.com/joho/godotenv v1.4.0 // direct
-)
+require github.com/joho/godotenv v1.4.0 // direct
 
 require (
 	github.com/go-stack/stack v1.8.0 // indirect
@@ -22,6 +19,4 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 )
 
-require github.com/streadway/amqp v1.0.0
-
-require github.com/stretchr/testify v1.7.2 // indirect
+require github.com/aws/aws-lambda-go v1.39.1

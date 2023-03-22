@@ -20,12 +20,3 @@ jobs:
 
       #     - name: Test
       #       run: go test -v ./...
-
-      - name: Build image and push to docker
-        uses: mr-smithers-excellent/docker-build-push@v5
-        with:
-          image: kdboateng/lb-notifications-go
-          tags: 1.2.0, latest
-          registry: docker.io
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}

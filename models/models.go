@@ -1,9 +1,21 @@
 package models
 
 import (
+	"encoding/json"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
+
+type Response struct {
+	StatusCode int         		`json:"status"`
+	Body       json.RawMessage 	`json:"body,omitempty"`
+}
+
+type Request struct {
+	Function string 			`json:"function"`
+	Payload  json.RawMessage 	`json:"payload"`
+}
 
 type Database struct {
 	Db                        *mongo.Database
