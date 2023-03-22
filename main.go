@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -8,12 +10,12 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"time"
 
-	"github.com/Kofi-D-Boateng/legacynotifications/router"
+	"github.com/Kofi-D-Boateng/legacynotifications/controllers"
+	"github.com/Kofi-D-Boateng/legacynotifications/models"
 	"github.com/Kofi-D-Boateng/legacynotifications/utils"
+	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/joho/godotenv"
-	"github.com/streadway/amqp"
 )
 
 func init() {
@@ -69,32 +71,31 @@ func init() {
 }
 
 func main() {
-
-	conn, err := amqp.Dial(os.Getenv("RABBITMQ_CONN"))
-	if err != nil {
-		panic(err)
-	}
-
-	defer conn.Close()
-
-	utils.StartMaillistQueue(conn)
-	utils.StartUpdateQueue(conn)
-	utils.StartInsertQueue(conn)
-	utils.StartVerificationQueue(conn)
-	utils.StartCustomerServiceQueue(conn)
-
-	r := router.Router()
-	port := os.Getenv("PORT")
 	utils.ConnectDatabase(os.Getenv("MONGO_URI"), os.Getenv("DB_NAME"))
+	lambda.Start(handler)
+}
 
-	srv := &http.Server{
-		Handler:      r,
-		Addr:         port,
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
-	}
-
-	fmt.Printf("Server listening at port%v \n", port)
-
-	log.Fatal(srv.ListenAndServe())
+func handler(ctx context.Context, request models.Request) (models.Response,error){
+	fmt.Printf("Request --> %v\n",request)
+		
+		switch request.Function{
+			case "getNotifications":
+				return controllers.GetNotificationsHandler(request.Payload)
+			case "customerService":
+				err := utils.SendToCustomerService(request.Payload)
+				if err != nil{
+					return models.Response{StatusCode: http.StatusInternalServerError},err
+				}
+				return models.Response{StatusCode: http.StatusOK,Body: []byte("")},nil
+			case "insertNotifications":
+				return utils.InsertToDatabase(request.Payload)
+			case "addToMailList":
+				return utils.AddToMailList(request.Payload)	
+			case "updateNotification":
+				return utils.UpdateNotifications(request.Payload)
+			case "verificationEmail":
+				return utils.SendVerificationEmail(request.Payload)
+			default:
+				return models.Response{},errors.New("unknown function")				
+		}
 }

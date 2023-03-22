@@ -4,14 +4,22 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/Kofi-D-Boateng/legacynotifications/models"
 	"github.com/Kofi-D-Boateng/legacynotifications/utils"
 )
 
-func GetNotificationsHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	email := r.FormValue("email")
-	foundUser := utils.FindAUser(email)
-
-	json.NewEncoder(w).Encode(foundUser.Notifications)
+func GetNotificationsHandler(payload json.RawMessage)(models.Response,error) {
+	
+	var email string
+	err := json.Unmarshal(payload,&email)
+	if err != nil{
+		return models.Response{StatusCode: http.StatusBadRequest,Body: []byte("")},err
+	}
+	
+	foundUser,err := utils.FindAUser(email)
+	if err != nil{
+		return models.Response{StatusCode: http.StatusUnauthorized,Body: []byte("")},err
+	}
+	user,_ := json.Marshal(foundUser)
+	return models.Response{StatusCode: http.StatusOK,Body: user},err
 }
