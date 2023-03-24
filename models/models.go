@@ -64,8 +64,8 @@ type TransactionNotificationVariables struct {
 	Receiver             string  `json:"receiver" `
 	ReceiverEmail        string  `json:"receiverEmail"`
 	Sender               string  `json:"sender"`
-	IsReceiverInDatabase bool    `json:"receiverInDatabase"`
-	DateOfTransaction    []int   `json:"dateOfTransAction"`
+	IsReceiverInDatabase bool    `json:"isReceiverInDatabase"`
+	DateOfTransaction    []int   `json:"dateOfTransaction"`
 	Type                 string  `json:"type"`
 	Amount               float64 `json:"amount"`
 }
